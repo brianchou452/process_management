@@ -2,17 +2,15 @@
     "tasks": [
         {
             "type": "cppbuild",
-            "label": "C/C++: clang 建置使用中檔案",
-            "command": "/usr/bin/clang",
+            "label": "C/C++: gcc 建置使用中檔案",
+            "command": "/usr/bin/gcc",
             "args": [
                 "-m32",
-                "-fcolor-diagnostics",
-                "-fansi-escape-codes",
+                "-fdiagnostics-color=always",
                 "-g",
-                "-Wall",
-                "-Wextra",
-                "-Wpedantic",
-                "${file}",
+                // "${file}",
+                "${workspaceFolder}/main.c",
+                "${workspaceFolder}/*.s",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}"
             ],
