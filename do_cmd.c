@@ -14,13 +14,15 @@ int do_wakeup(void) {
 
 int do_fork(void) {
   int child = kfork(body);
-  if (child < 0)
+  if (child < 0) {
     printf("kfork failed\n");
-  else {
-    printf("proc %d kforked a child = %d\n", running->pid, child);
-    printList("readyQueue", readyQueue);
+    return -1;
   }
-  return child;
+  printf("proc %d kforked a child = %d\n", running->pid, child);
+  printList("readyQueue", readyQueue);
+
+  // return child;
+  return 0;
 }
 
 int do_switch(void) {

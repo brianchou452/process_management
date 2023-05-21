@@ -66,15 +66,42 @@ int kfork(int (*func)(void)) {
 
   enqueue(&readyQueue, p);
 
+  createNode(running, p);
+
   return p->pid;
 }
 
 int kexit(int value) {
+  if (running->pid == 1) {
+    printf("P1 never dies\n");
+    return 0;
+  } else if (running->child != NULL) {
+    PROC *p = running->child;
+    while (p) {
+      p->ppid = 1;
+      p->parent = &proc[1];
+      // p->status = ZOMBIE;
+      p = p->sibling;
+    }
+    PROC *p1 = &proc[1];
+    if (p1->child == NULL) {
+      p1->child = running->child;
+    } else {
+      p = p1->child;
+      while (p->sibling != NULL) {
+        p = p->sibling;
+      }
+      p->sibling = running->child;
+    }
+    running->child = NULL;
+  }
+
   running->exitCode = value;
-  running->status = FREE;
+  running->status = ZOMBIE;
   running->priority = 0;
-  enqueue(&freeList, running);
-  printList("freeList", freeList);
+  // enqueue(&freeList, running);
+  // printList("freeList", freeList);
+  // removeNode(running->parent, running);
   tswitch();
   return 0;
 }

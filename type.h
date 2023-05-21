@@ -9,6 +9,8 @@
 #define SLEEP 2
 #define ZOMBIE 3
 
+char *pstatus[] = {"FREE   ", "READY  ", "SLEEP  ", "ZOMBIE", "RUNNING"};
+
 typedef struct proc {
   struct proc *next;  // next proc pointer
   int *saved_sp;      // at offset 4: do NOT alter
@@ -26,12 +28,12 @@ typedef struct proc {
   int kstack[SSIZE];  // processs stack
 } PROC;
 
-char *pstatus[] = {"FREE   ", "READY  ", "SLEEP  ", "ZOMBIE", "RUNNING"};
-
 PROC proc[NPROC];  // NPROC procs
 PROC *freeList;    // free list of procs
 PROC *readyQueue;  // priority queue of READY procs
 PROC *running;     // current running proc pointer
+PROC *root;        // root PROC pointer
+char *log_formate_string;
 
 void tswitch(void);
 int do_switch(void);
@@ -55,5 +57,8 @@ int kwait(int *status);
 void printList(char *name, PROC *p);
 int enqueue(PROC **queue, PROC *p);
 PROC *dequeue(PROC **queue);
+
+PROC *createNode(PROC *parent, PROC *node);
+void removeNode(PROC *parent, PROC *node);
 
 #endif
