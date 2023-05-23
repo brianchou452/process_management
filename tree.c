@@ -1,5 +1,3 @@
-
-
 void initialize() {
   root = running;
   root->parent = root;
@@ -9,9 +7,6 @@ void initialize() {
 }
 
 PROC *createNode(PROC *parent, PROC *node) {
-  // PROC *node = malloc(sizeof(PROC));
-  // strcpy(node->name, name);
-  //  node->type = type;
   node->parent = parent;
   node->child = NULL;
   node->sibling = NULL;
@@ -25,6 +20,7 @@ PROC *createNode(PROC *parent, PROC *node) {
     }
     temp->sibling = node;
   }
+  LOG_DEBUG("create node P%d", node->pid);
 
   return node;
 }
@@ -39,6 +35,7 @@ void removeNode(PROC *parent, PROC *node) {
     }
     temp->sibling = node->sibling;
   }
+  LOG_DEBUG("remove node P%d", node->pid);
 }
 
 void printProcessTree(PROC *node, int depth) {

@@ -1,21 +1,48 @@
 int do_wait(void) {
-  printf("do_wait() : wait for a ZOMBIE child\n");
+  LOG_DEBUG("start do_wait()");
+  int status = 0;
+  int pid = 0;
+  do {
+    pid = kwait(&status);
+    if (pid < 0) {
+      LOG_ERROR("no child");
+      return 0;
+    }
+    printf("proc %d wait for a ZOMBIE child P%d exitCode=%d\n", running->pid,
+           pid, status);
+  } while (pid != -1);
+
   return 0;
-};
+}
 int do_sleep(void) {
-  printf("do_sleep() : sleep for a few seconds\n");
+  LOG_DEBUG("start do_sleep()");
+  if (running->pid == 1) {
+    LOG_ERROR("P1 never sleeps");
+    return 0;
+  }
+
+  int event;
+  printf("enter an event value to sleep on : ");
+  scanf("%d", &event);
+  cleanBuffer();
+  ksleep(event);
   return 0;
-};
-;
+}
+
 int do_wakeup(void) {
-  printf("do_wakeup() : wakeup a sleeping proc\n");
+  LOG_DEBUG("start do_wakeup()");
+  int event;
+  printf("enter an event value to wakeup : ");
+  scanf("%d", &event);
+  cleanBuffer();
+  kwakeup(event);
   return 0;
-};
+}
 
 int do_fork(void) {
   int child = kfork(body);
   if (child < 0) {
-    printf("kfork failed\n");
+    LOG_ERROR("kfork failed");
     return -1;
   }
   printf("proc %d kforked a child = %d\n", running->pid, child);
@@ -26,9 +53,9 @@ int do_fork(void) {
 }
 
 int do_switch(void) {
-  printf("proc %d switch task\n", running->pid);
+  printf("P %d switch task\n", running->pid);
   tswitch();
-  printf("proc %d resume\n", running->pid);
+  printf("P%d resume\n", running->pid);
   return 0;
 }
 
@@ -36,11 +63,12 @@ int do_exit(void) {
   int value;
   // PROC *p;
   if (running->pid == 1) {
-    printf("P1 never dies\n");
+    LOG_ERROR("P1 never dies");
     return 0;
   }
-  printf("proc %d in do_exit(), enter an exit value : ", running->pid);
+  printf("P%d in do_exit(), enter an exit value : ", running->pid);
   scanf("%d", &value);
+  cleanBuffer();
   kexit(value);
   return 0;
 }

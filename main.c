@@ -12,10 +12,8 @@ int (*fptr[])() = {do_ps,    do_fork,   do_switch, do_exit,
 
 #include "do_cmd.c"
 #include "kernel.c"
-#include "logger.c"
 #include "queue.c"
 #include "tree.c"
-#include "wait.c"
 
 int findCmd(char *command) {
   char *cmds[] = {"ps", "fork", "switch", "exit", "sleep", "wakeup", "wait", 0};
@@ -35,23 +33,10 @@ void findChildren(PROC *p) {
   printf("NULL\n");
 }
 
-void removeZombie(PROC *p) {
-  PROC *child = p->child;
-  bool hasZombie = false;
-  while (child != NULL) {
-    if (child->status == ZOMBIE) {
-      hasZombie = true;
-      printf("proc %d is a zombie, remove it from child list\n", child->pid);
-      removeNode(p, child);
-      p->status = FREE;
-      dequeue(&readyQueue);
-      enqueue(&freeList, child);
-    }
-    child = child->sibling;
-  }
-  if (hasZombie) {
-    printProcessTree(root, 0);
-  }
+void cleanBuffer(void) {
+  int c;
+  while ((c = getchar()) != '\n' && c != EOF) {
+  };
 }
 
 int body(void) {
@@ -65,22 +50,22 @@ int body(void) {
     findChildren(running);
 
     printList("freeList ", freeList);
-    printList("readQueue", readyQueue);
+    printList("sleepList", sleepList);
+    printList("readyQueue", readyQueue);
 
-    printf("input a command: [ps|fork|switch|exit] : ");
+    printf("P%d > [ps|fork|switch|exit|sleep|wakeup|wait] : ", running->pid);
     fgets(command, 64, stdin);
     command[strlen(command) - 1] = 0;
     int id = 0;
     if (command[0] != 0) {
       id = findCmd(command);
       if (id < 0) {
-        printf("invalid command, enter menu for help menu\n");
+        printf("invalid command\n");
         continue;
       }
 
       stop = fptr[id]();
       printProcessTree(root, 0);
-      removeZombie(running);
     }
   } while (!(stop > 0));
   return 0;
@@ -91,12 +76,12 @@ int main(void) {
   printf("\nWelcome to Multitasking System\n");
   init();
   initialize();
-  printf("P0 fork P1\n");
+  LOG_DEBUG("P0 fork P1");
   kfork(body);
 
   while (1) {
     if (readyQueue) {
-      printf("P0: switch task\n");
+      LOG_DEBUG("P0: switch task");
       tswitch();
     }
   }
@@ -104,7 +89,7 @@ int main(void) {
 
 /*********** scheduler *************/
 int scheduler(void) {
-  printf("proc %d in scheduler()\n", running->pid);
+  LOG_DEBUG("P%d in scheduler()", running->pid);
   if (running->status == READY) enqueue(&readyQueue, running);
   printList("readyQueue", readyQueue);
   running = dequeue(&readyQueue);

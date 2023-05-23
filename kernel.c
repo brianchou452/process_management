@@ -6,10 +6,11 @@ int init(void) {
     proc[i].priority = 0;
     proc[i].next = (PROC *)&proc[(i + 1)];
   }
-  proc[NPROC - 1].next = 0;
+  proc[NPROC - 1].next = NULL;
 
   freeList = &proc[0];
-  readyQueue = 0;
+  readyQueue = NULL;
+  sleepList = NULL;
 
   // create P0 as the initial running process
   running = dequeue(&freeList);
@@ -18,20 +19,78 @@ int init(void) {
   running->priority = 0;
   running->parent = running;
   printList("freeList", freeList);
-  printf("init complete: P0 running\n");
+  LOG_DEBUG("init complete: P0 running");
   return 0;
 }
 
 int ksleep(int event) {
   // Algorithm 3.4.1
+  LOG_DEBUG("ksleep()");
+  running->event = event;
+  running->status = SLEEP;
+  LOG_DEBUG("add P%d to sleepList", running->pid);
+  enqueue(&sleepList, running);
+  // dequeue(&readyQueue);
+  tswitch();
 }
 
 // 3. Implement kwakeup as the algorithm in 3.4.2
 int kwakeup(int event) {
   // Algorithm 3.4.2
+  PROC *p = sleepList;
+  PROC *p_next = NULL;
+  while (p != NULL) {
+    p_next = p->next;
+    if (p->event == event) {
+      LOG_DEBUG("remove P%d from sleepList", p->pid);
+      // dequeue(&sleepList);
+      removeProc(&sleepList, p);
+      LOG_DEBUG("wakeup P%d", p->pid);
+      enqueue(&readyQueue, p);
+      p->status = READY;
+    }
+    p = p_next;
+  }
 }
+/*
+int kwait(int *status)
+每次呼叫kwait()，就檢查自己的child list，如果有ZOMBIE，就回收它，並回傳它的pid。
+如果沒有ZOMBIE，就睡覺，等待被wakeup。並回傳-1。
+一次只會移除一個ZOMBIE，如果有多個ZOMBIE，就要多次呼叫kwait()。
+
+*/
 int kwait(int *status) {
   // Algorithm 3.5.3
+  if (running->child == NULL) {
+    LOG_ERROR("no child");
+    return -1;
+  }
+  bool hasZombie = false;
+  PROC *p = running->child;
+  while (p != NULL) {
+    if (p->status == ZOMBIE) {
+      hasZombie = true;
+      LOG_DEBUG("P%d is a zombie, remove it from child list", p->pid);
+      *status = p->exitCode;
+      p->status = FREE;
+      // dequeue(&readyQueue);
+      LOG_DEBUG("remove P%d from readyQueue", p->pid);
+      removeNode(running, p);
+      LOG_DEBUG("add P%d to freeList", p->pid);
+      enqueue(&freeList, p);
+      return p->pid;
+    }
+    p = p->sibling;
+  }
+  if (!hasZombie) {
+    LOG_DEBUG("no zombie");
+    printProcessTree(root, 0);
+    LOG_DEBUG("sleep P%d", running->pid);
+    ksleep(running->event);
+    return -1;
+  }
+
+  return 0;
 }
 
 /*******************************************************
@@ -102,6 +161,8 @@ int kexit(int value) {
   // enqueue(&freeList, running);
   // printList("freeList", freeList);
   // removeNode(running->parent, running);
+  // wakeup parent
+  kwakeup(running->parent->event);
   tswitch();
   return 0;
 }

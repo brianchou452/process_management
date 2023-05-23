@@ -9,6 +9,25 @@
 #define SLEEP 2
 #define ZOMBIE 3
 
+#define __FILENAME__ \
+  (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+
+#define LOG_DEBUG(...)                                                \
+  do {                                                                \
+    printf("\033[0;32;34mDEBUG @%s/%s():%d ", __FILENAME__, __func__, \
+           __LINE__);                                                 \
+    printf(__VA_ARGS__);                                              \
+    printf("\033[0m\n");                                              \
+  } while (0)
+
+#define LOG_ERROR(...)                                                \
+  do {                                                                \
+    printf("\033[0;32;31mERROR @%s/%s():%d ", __FILENAME__, __func__, \
+           __LINE__);                                                 \
+    printf(__VA_ARGS__);                                              \
+    printf("\033[0m\n");                                              \
+  } while (0)
+
 char *pstatus[] = {"FREE   ", "READY  ", "SLEEP  ", "ZOMBIE", "RUNNING"};
 
 typedef struct proc {
@@ -19,6 +38,7 @@ typedef struct proc {
   int ppid;      // parent pid
   int status;    // PROC status: FREE|READY|etc
   int priority;  // scheduling priority
+  int event;     // event value to sleep on
   int exitCode;  // exit code value
 
   struct proc *child;    // first child PROC pointer
@@ -31,6 +51,7 @@ typedef struct proc {
 PROC proc[NPROC];  // NPROC procs
 PROC *freeList;    // free list of procs
 PROC *readyQueue;  // priority queue of READY procs
+PROC *sleepList;   // linked list of SLEEP procs
 PROC *running;     // current running proc pointer
 PROC *root;        // root PROC pointer
 char *log_formate_string;
@@ -45,8 +66,6 @@ int do_sleep(void);
 int do_wakeup(void);
 int kfork(int (*func)(void));
 int body(void);
-void log_debug(char *function_name, char *msg);
-void log_error(char *function_name, char *msg);
 
 int init(void);
 int kexit(int value);
@@ -57,8 +76,12 @@ int kwait(int *status);
 void printList(char *name, PROC *p);
 int enqueue(PROC **queue, PROC *p);
 PROC *dequeue(PROC **queue);
+void removeProc(PROC **queue, PROC *p);
 
 PROC *createNode(PROC *parent, PROC *node);
 void removeNode(PROC *parent, PROC *node);
+void printProcessTree(PROC *node, int depth);
+
+void cleanBuffer(void);
 
 #endif

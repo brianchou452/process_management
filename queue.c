@@ -1,7 +1,7 @@
 /****************** queue.c file ********************/
 int enqueue(PROC **queue, PROC *p) {
   PROC *q = *queue;
-  if (q == 0 || p->priority > q->priority) {
+  if (q == NULL || p->priority > q->priority) {
     *queue = p;
     p->next = q;
   } else {
@@ -9,6 +9,9 @@ int enqueue(PROC **queue, PROC *p) {
     p->next = q->next;
     q->next = p;
   }
+
+  LOG_DEBUG("enqueue P%d", p->pid);
+
   return 0;
 }
 
@@ -16,7 +19,20 @@ int enqueue(PROC **queue, PROC *p) {
 PROC *dequeue(PROC **queue) {
   PROC *p = *queue;
   if (p) *queue = (*queue)->next;
+  LOG_DEBUG("dequeue P%d", p->pid);
   return p;
+}
+
+void removeProc(PROC **queue, PROC *p) {
+  PROC *q = *queue;
+  if (q == p) {
+    *queue = p->next;
+  } else {
+    while (q->next != p) q = q->next;
+    q->next = p->next;
+  }
+  LOG_DEBUG("remove P%d", p->pid);
+  printList("debug sleepList", sleepList);
 }
 
 void printList(char *name, PROC *p) {
